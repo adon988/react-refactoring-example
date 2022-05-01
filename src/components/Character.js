@@ -1,81 +1,60 @@
-import React, { Component } from 'react';
+import React, { useState, useEffect } from "react";
 
-import Summary from './Summary';
+import Summary from "./Summary";
 
-class Character extends Component {
-  state = { loadedCharacter: {}, isLoading: false };
+const Character = (props) => {
+  const [loadedCharacter, setLoadedCharacter] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
 
-  shouldComponentUpdate(nextProps, nextState) {
-    console.log('shouldComponentUpdate');
-    return (
-      nextProps.selectedChar !== this.props.selectedChar ||
-      nextState.loadedCharacter.id !== this.state.loadedCharacter.id ||
-      nextState.isLoading !== this.state.isLoading
-    );
-  }
+  useEffect(() => {
+    console.log("Component did update");
+    fetchData();
+  }, [props.selectedChar]);
 
-  componentDidUpdate(prevProps) {
-    console.log('Component did update');
-    if (prevProps.selectedChar !== this.props.selectedChar) {
-      this.fetchData();
-    }
-  }
-
-  componentDidMount() {
-    this.fetchData();
-  }
-
-  fetchData = () => {
+  const fetchData = () => {
     console.log(
-      'Sending Http request for new character with id ' +
-        this.props.selectedChar
+      "Sending Http request for new character with id " + props.selectedChar
     );
-    this.setState({ isLoading: true });
-      fetch(`https://pokeapi.co/api/v2/pokemon/${this.props.selectedChar}`)
-      .then(response => {
+    setIsLoading(true);
+    fetch(`https://pokeapi.co/api/v2/pokemon/${props.selectedChar}`)
+      .then((response) => {
         if (!response.ok) {
-          throw new Error('Could not fetch person!');
+          throw new Error("Could not fetch person!");
         }
         return response.json();
       })
-      .then(charData => {
+      .then((charData) => {
         const loadedCharacter = {
-          id: this.props.selectedChar,
+          id: props.selectedChar,
           name: charData.name,
           height: charData.height,
           abilities: charData.abilities,
-          baseExperience: charData.base_experience
+          baseExperience: charData.base_experience,
         };
-        this.setState({ loadedCharacter: loadedCharacter, isLoading: false });
+        setLoadedCharacter(loadedCharacter);
+        setIsLoading(false);
       })
-      .catch(err => {
+      .catch((err) => {
         console.log(err);
       });
   };
 
-  componentWillUnmount() {
-    console.log('Too soon...');
+  let content = <p>Loading Character...</p>;
+
+  if (!isLoading && loadedCharacter.id) {
+    content = (
+      <Summary
+        name={loadedCharacter.name}
+        gender={loadedCharacter.gender}
+        height={loadedCharacter.height}
+        baseExperience={loadedCharacter.baseExperience}
+        abilities={loadedCharacter.abilities}
+      />
+    );
+  } else if (!isLoading && !loadedCharacter.id) {
+    content = <p>Failed to fetch character.</p>;
   }
+  return content;
+};
 
-  render() {
-    let content = <p>Loading Character...</p>;
-
-    if (!this.state.isLoading && this.state.loadedCharacter.id) {
-      content = (
-        <Summary
-          name={this.state.loadedCharacter.name}
-          gender={this.state.loadedCharacter.gender}
-          height={this.state.loadedCharacter.height}
-          baseExperience={this.state.loadedCharacter.baseExperience}
-          abilities={this.state.loadedCharacter.abilities}
-
-        />
-      );
-    } else if (!this.state.isLoading && !this.state.loadedCharacter.id) {
-      content = <p>Failed to fetch character.</p>;
-    }
-    return content;
-  }
-}
-
-export default Character;
+export default React.memo(Character);
